@@ -1,47 +1,154 @@
 #include <MultiStepper.h>
 #include <AccelStepper.h>
+// DRV8825
 
-#define dirPin 2
+#define MOTOR_137 // 1:3.7 reducer on NEMA 17
+//#define MOTOR_1139 // 1:139 reducer on NEMA 17
+//#define MOTOR_11 // small NEMA 17 without reducer
+
+#define dirPin 5
 #define stepPin 3
 #define microPin 4
 #define motorInterfaceType 1
 
-const unsigned int stepsPerRevolution = 200*139*32;
-long steps = 10;
+#define stepsperruns 1
 
+
+#ifdef MOTOR_137
+const long stepsPerRevolution = 200*3.7;
+#endif
+#ifdef MOTOR_1139
+const long stepsPerRevolution = 200*139;
+#endif
+#ifdef MOTOR_11
+const long stepsPerRevolution = 200;
+#endif
+
+long steps = stepsperruns;
+
+size_t state = 0;
 AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, dirPin);
-void setup() {
-  Serial.begin(9600);
-  stepper.setMaxSpeed(30); // default 1:3.7=50*16 1:139=50*32 1:1=30
-  stepper.setAcceleration(10); // default 1:3.7=15*8 1:139=15*16 1:1=10
-  pinMode(microPin, OUTPUT);
-  digitalWrite(microPin, LOW);
-  Serial.println("Start with microstepping");
+
+volatile bool buttonInterrupt = false;
+void buttonPushed() {
+    stepper.stop();
+    buttonInterrupt = true;
+}
+
+void reset() {
+  Serial.println("Reset");
+  stepper.disableOutputs(); // motor sleep mode
+  state=0;
   stepper.setCurrentPosition(0);
-  //stepper.setSpeed(50*32);
+  digitalWrite(microPin, LOW); // set x32 micro stepping
+  steps = stepsperruns;
+}
+
+void setup() {
+  pinMode(microPin, OUTPUT);
+  pinMode(2, INPUT_PULLUP);
+  attachInterrupt(INT0, buttonPushed, FALLING);
+  digitalWrite(microPin, LOW);
+  Serial.begin(9600);
+  
+  #ifdef MOTOR_137
+  stepper.setMaxSpeed(50*16); // full stepping max: 50*16
+  stepper.setAcceleration(15*8); // full stepping max: 15*8
+  #endif
+  #ifdef MOTOR_1139
+  stepper.setMaxSpeed(50*32); // full stepping max: 50*32
+  stepper.setAcceleration(15*16); // full stepping max: 15*16
+  #endif
+  #ifdef MOTOR_11
+  stepper.setMaxSpeed(30); // full stepping max: 30
+  stepper.setAcceleration(10); // full stepping max: 10
+  #endif
+  reset();
 }
 void loop() {
-  Serial.println("-");
-  Serial.print("current position ");
-  Serial.println(stepper.currentPosition());
+  if (buttonInterrupt) {
+    delay(500); // debounce
+    if(!digitalRead(2)) // button still push, loop and wait again
+      return;
+    buttonInterrupt = false;
+    Serial.println("button released");
+    
+    // change state
+    if (state == 0) {
+      state = 1;
+      Serial.println("State 1");
+    }
+    else {
+      state = 0;
+      Serial.println("IDLE");
+      reset();
+    }
+  }
   
-  //stepper.runSpeed();
-
-
-  long todo = steps*stepsPerRevolution;
-  Serial.print("going to ");
-  Serial.println(todo);
-  
-  stepper.moveTo(todo);
-  stepper.runToPosition();
-  delay(500);
-  Serial.print("Turn #");
-  Serial.print(steps);
-  Serial.println("done");
-  steps += 10;
-  delay(500);
-
-  //stepper.moveTo(0);
-  //stepper.runToPosition();
-  //delay(1500);
+  if (state == 0) {
+    if (Serial.available() > 0) {
+      int incomingByte = Serial.read();
+      Serial.println((char)incomingByte);
+      if(incomingByte >= '0' && incomingByte <= '9') {
+        state = incomingByte - '0';
+        Serial.print("Going to state ");
+        Serial.println(state);
+      }
+    }
+  }
+  else if (state == 1) {
+    digitalWrite(microPin, LOW); // set full steps
+    stepper.enableOutputs();
+    Serial.println("-");
+    Serial.print("current position ");
+    Serial.println(stepper.currentPosition());
+    
+    long todo = steps*stepsPerRevolution;
+    Serial.print("going to ");
+    Serial.println(todo);
+    
+    stepper.moveTo(todo);
+    stepper.runToPosition();
+    delay(500);
+    Serial.print("Turn #");
+    Serial.print(steps);
+    Serial.println("done");
+    steps += stepsperruns;
+    delay(500);
+    
+  } else if (state == 2) {
+    stepper.setSpeed(50*32);
+    stepper.runSpeed();
+    Serial.println("Run speed looping");
+    delay(1500);
+  } else if (state == 3) {
+    
+    #ifdef MOTOR_11
+    stepper.setMaxSpeed(30*32); // micro stepping max: 30*32
+    stepper.setAcceleration(10*32); // micro stepping max: max: 10*32
+    #endif
+    #ifdef MOTOR_137
+    stepper.setMaxSpeed(50*16*32); // micro stepping max: max: 50*16*32
+    stepper.setAcceleration(15*8*32); // micro stepping max: max: 15*8*32
+    #endif
+    
+    digitalWrite(microPin, HIGH); // set x32 micro stepping
+    stepper.enableOutputs();
+    Serial.println("-");
+    Serial.print("current position ");
+    Serial.println(stepper.currentPosition());
+    
+    long todo = 32*steps*stepsPerRevolution;
+    Serial.print("going to ");
+    Serial.println(todo);
+    
+    stepper.moveTo(todo);
+    stepper.runToPosition();
+    delay(500);
+    Serial.print("Turn #");
+    Serial.print(steps);
+    Serial.println("done");
+    steps += stepsperruns;
+    delay(500);
+  }
 }
