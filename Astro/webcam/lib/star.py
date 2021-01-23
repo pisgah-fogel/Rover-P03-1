@@ -134,3 +134,4 @@ def findStars(image, threshold, debugimg):
 
     print('Number of pixels the 10x average value: ', count, " / ", imgw*imgh)
     print('Number of stars: ', len(stars))
+    return stars
