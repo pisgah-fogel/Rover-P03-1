@@ -2,12 +2,15 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 
-#Capture video from webcam
-vid_capture = cv2.VideoCapture(0)
-vid_cod = cv2.VideoWriter_fourcc(*'XVID')
-output = cv2.VideoWriter("videos/cam_video.mp4", vid_cod, 20.0, (640,480))
-print('time,Pixvalue',  file=open('file.csv', 'w'))
+saveVideo = False
 
+#Capture video from webcam
+#vid_capture = cv2.VideoCapture(2) # Astro camera
+vid_capture = cv2.VideoCapture(1) # labtop camera
+
+if saveVideo:
+    vid_cod = cv2.VideoWriter_fourcc(*'XVID')
+    output = cv2.VideoWriter("videos/cam_video.mp4", vid_cod, 20.0, (640,480))
 
 # Graphs
 y = []
@@ -27,8 +30,8 @@ while(True):
     cv2.circle(frame, (50, 50), 2, (255,255,255), -1)
     print(frame.dtype)
     (v) = frame[200, 200]
-    print("Pixel at (50, 50) - {}".format(v))
-    print(str(time.time_ns())+',' +str(v),  file=open('file.csv','a')) 
+    #print("Pixel at (50, 50) - {}".format(v))
+    #print(str(time.time_ns())+',' +str(v),  file=open('file.csv','a')) 
 
     #frame[50, 50] = (0)
     # Plot datas:
@@ -38,13 +41,15 @@ while(True):
     fig.canvas.draw()
 
     cv2.imshow("My cam video", frame)
-    output.write(frame)
+    if saveVideo:
+        output.write(frame)
     # Close and break the loop after pressing "q" key
     if cv2.waitKey(1) &0XFF == ord('q'):
         break
 # close the already opened camera
 vid_capture.release()
-# close the already opened file
-output.release()
+if saveVideo:
+    # close the already opened file
+    output.release()
 # close the window and de-allocate any associated memory usage
 cv2.destroyAllWindows()
