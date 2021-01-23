@@ -3,10 +3,11 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-from lib.star import getStarBoundary
+from lib.star import findStars
 from lib.star import imageAvg
 
 saveVideo = False
+simulation = True
 
 #Capture video from webcam
 #vid_capture = cv2.VideoCapture(2) # Astro camera
@@ -28,16 +29,27 @@ plt.ylim((0,255))
 
 while(True):
     # Capture each frame of webcam video
-    ret,frameold = vid_capture.read()
-    frame = cv2.cvtColor(frameold, cv2.COLOR_BGR2GRAY)
-    imgh = len(frame)
-    imgw = len(frame[0])
+    if not simulation:
+        ret,frameold = vid_capture.read()
+        frame = cv2.cvtColor(frameold, cv2.COLOR_BGR2GRAY)
+        imgh = len(frame)
+        imgw = len(frame[0])
+    else:
+        imgh = 500
+        imgw = 500
+        frame = np.zeros((imgh,imgw,1), np.uint8)
+        cv2.circle(frame, (100, 101), 2, (154), -1)
+        cv2.circle(frame, (100, 201), 4, (203), -1)
+        cv2.circle(frame, (200, 101), 3, (173), -1)
 
     # debug frame we can annotate
     debugimg = np.zeros((imgh,imgw,3), np.uint8)
 
-    cv2.putText(debugimg, "test", (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
-    cv2.circle(debugimg, (50, 50), 2, (255,255,255), -1)
+    # Detect star
+    avg = imageAvg(frame)
+    findStars(frame, avg, debugimg)
+
+    cv2.putText(debugimg, "Threshold", (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1)
 
     #print("Pixel at (50, 50) - {}".format(v))
     #print(str(time.time_ns())+',' +str(v),  file=open('file.csv','a')) 
