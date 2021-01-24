@@ -71,8 +71,8 @@ def getStarBoundary(interx, intery, image, threshold, debugimg):
             break
     xmax = x
 
-    print("Star xmin ", xmin, "xmax", xmax)
-    print("Star ymin ", ymin, "ymax", ymax)
+    #print("Star xmin ", xmin, "xmax", xmax)
+    #print("Star ymin ", ymin, "ymax", ymax)
     cv2.rectangle(debugimg, (xmin, ymin), (xmax, ymax), (0, 255, 0))
 
     #starcenter = (xmin + (xmax-xmin)/2, ymin + (ymax-ymin)/2)
@@ -126,7 +126,7 @@ def findStars(image, threshold, debugimg):
                     tmp = getStarBoundary(x, y, image, threshold, debugimg)
                     stars.append(tmp)
                     y += tmp[3] - tmp[2] # Jump over the star
-                    starcenter = (tmp[0] + (tmp[1]-tmp[0])/2, tmp[2] + (tmp[3]-tmp[2])/2)
+                    starcenter = boxToPosition(tmp)
                     print("Star center at ", starcenter[0], " ", starcenter[1])
                     debugimg[int(starcenter[1]), int(starcenter[0])] = (255, 255, 255)
                 else:
@@ -135,3 +135,30 @@ def findStars(image, threshold, debugimg):
     print('Number of pixels the 10x average value: ', count, " / ", imgw*imgh)
     print('Number of stars: ', len(stars))
     return stars
+
+def boxToPosition(box):
+    """
+    box[0] min x
+    box[1] max x
+    box[2] min y
+    box[3] max y
+    return star middle position (x, y)
+    """
+    return (box[0] + (box[1]-box[0])/2, box[2] + (box[3]-box[2])/2)
+
+def boxToWeightPosition(box, image):
+    pass # TODO
+
+def findStarNewBox(oldbox, image, threshold, debugimg, distance):
+    xmin = oldbox[0]
+    xmax = oldbox[1]
+    ymin = oldbox[2]
+    ymax = oldbox[3]
+    for x in range(xmin-distance, xmax+distance):
+        for y in range(ymin-distance, ymax+distance):
+            if image[y][x] > 10*threshold:
+                tmp = getStarBoundary(x, y, image, threshold, debugimg)
+                starcenter = boxToPosition(tmp)
+                debugimg[int(starcenter[1]), int(starcenter[0])] = (255, 255, 255)
+                return tmp
+    return (0,0,0,0)
