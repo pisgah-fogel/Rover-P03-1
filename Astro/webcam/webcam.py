@@ -13,7 +13,7 @@ state = 0
 
 #Capture video from webcam
 #vid_capture = cv2.VideoCapture(2) # Astro camera
-vid_capture = cv2.VideoCapture(0) # labtop camera
+#vid_capture = cv2.VideoCapture(0) # labtop camera
 
 if saveVideo:
     vid_cod = cv2.VideoWriter_fourcc(*'XVID')
@@ -55,12 +55,16 @@ while(True):
     diffy = 0
     if state == 0:
         avg = imageAvg(frame)
+        if avg < 10:
+            avg = 10
         stars = findStars(frame, avg, debugimg)
         
-        if len(targetbox) > 0:
+        if len(stars) > 0:
             targetbox = stars[1]
-        else:
+        elif len(stars) == 1:
             targetbox = stars[0]
+        else:
+            targetbox = (0, 0, 0, 0)
     else:
         newbox = findStarNewBox(targetbox, frame, avg, debugimg, 42)
         oldpos = boxToPosition(targetbox)
@@ -95,7 +99,8 @@ while(True):
     framecount += 1
 
 # close the already opened camera
-vid_capture.release()
+if not simulation:
+    vid_capture.release()
 if saveVideo:
     # close the already opened file
     output.release()

@@ -7,6 +7,9 @@ def getStarBoundary(interx, intery, image, threshold, debugimg):
     threshold: while the pixel value is above the threshold we are inside the star
     return the xmin, xmax, ymin, ymax containing the star
     """
+    if interx + 20 >= len(image[0]) or intery + 20 >= len(image):
+        return (interx, interx, intery, intery)
+
     x = interx
     y = intery
     # find top (y small)
@@ -105,8 +108,8 @@ def findStars(image, threshold, debugimg):
     image: black and white image
     threshold: minimum pixel value to consider it as a star, you can use imageAvg(image)
     """
-    imgw = len(image[0])
-    imgh = len(image)
+    imgw = len(image[0])-1
+    imgh = len(image)-1
     count = 0
     stars = []
 
