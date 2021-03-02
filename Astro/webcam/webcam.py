@@ -81,7 +81,7 @@ while(True):
     #print(str(time.time_ns())+',' +str(v),  file=open('file.csv','a')) 
 
     # Plot datas:
-    y.insert(0, diffx)
+    y.insert(0, math.sqrt(diffx**2+diffy**2))
     y.pop()
     line1.set_ydata(y)
     fig.canvas.draw()
